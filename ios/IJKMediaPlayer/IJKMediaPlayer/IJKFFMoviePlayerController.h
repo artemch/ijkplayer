@@ -24,6 +24,7 @@
 #import "IJKMediaPlayback.h"
 #import "IJKFFMonitor.h"
 #import "IJKFFOptions.h"
+#import "IJKFFMoviePlayerController+PlayerMode.h"
 
 // media meta
 #define k_IJKM_KEY_FORMAT         @"format"
@@ -76,6 +77,14 @@ typedef enum IJKLogLevel {
 
 - (id)initWithContentURLString:(NSString *)aUrlString
                    withOptions:(IJKFFOptions *)options;
+
+- (id)initWithContentURL:(NSURL *)aUrl
+             withOptions:(IJKFFOptions *)options
+              playerMode:(IJKFFMoviePlayerMode)playerMode;
+
+- (id)initWithContentURLString:(NSString *)aUrlString
+                   withOptions:(IJKFFOptions *)options
+                    playerMode:(IJKFFMoviePlayerMode)playerMode;
 
 - (void)prepareToPlay;
 - (void)play;

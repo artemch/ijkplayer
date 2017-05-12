@@ -31,5 +31,6 @@
 + (IJKAudioKit *)sharedInstance;
 - (void)setupAudioSession;
 - (BOOL)setActive:(BOOL)active;
+- (void)setupAudioSessionWithCategory:(NSString *)category;
 
 @end
