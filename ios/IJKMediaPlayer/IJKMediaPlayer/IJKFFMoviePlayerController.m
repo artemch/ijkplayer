@@ -45,6 +45,8 @@ static const char *kIJKFFRequiredFFmpegVersion = "ff3.2--ijk0.7.6--20170324--001
 
 @interface IJKFFMoviePlayerController()
 
+@property (nonatomic, strong) IJKFFOptions *options;
+
 @end
 
 @implementation IJKFFMoviePlayerController {
@@ -247,6 +249,7 @@ void IJKFFIOStatCompleteRegister(void (*cb)(const char *url,
         [self setupPlayerMode:playerMode];
         
         [options applyTo:_mediaPlayer];
+        self.options = options;
         _pauseInBackground = NO;
         
         // init extra
@@ -352,6 +355,10 @@ void IJKFFIOStatCompleteRegister(void (*cb)(const char *url,
     return ijkmp_is_playing(_mediaPlayer);
 }
 
+- (void)restart {
+    [self performSelectorInBackground:@selector(restartInternal:) withObject:self];
+}
+
 - (void)setPauseInBackground:(BOOL)pause
 {
     _pauseInBackground = pause;
@@ -396,6 +403,7 @@ inline static int getPlayerOption(IJKFFOptionCategory category)
         return;
 
     ijkmp_set_option(_mediaPlayer, getPlayerOption(category), [key UTF8String], [value UTF8String]);
+    [self.options setOptionValue:value forKey:key ofCategory:category];
 }
 
 - (void)setOptionIntValue:(int64_t)value
@@ -407,6 +415,7 @@ inline static int getPlayerOption(IJKFFOptionCategory category)
         return;
 
     ijkmp_set_option_int(_mediaPlayer, getPlayerOption(category), [key UTF8String], value);
+    [self.options setOptionIntValue:value forKey:key ofCategory:category];
 }
 
 + (void)setLogReport:(BOOL)preferLogReport
@@ -1637,6 +1646,32 @@ static int ijkff_inject_callback(void *opaque, int message, void *data, size_t d
         default:
             break;
     }
+}
+
+- (void)restartInternal:(IJKFFMoviePlayerController *)mySelf {
+    if (!_mediaPlayer)
+        return;
+    
+    // Shutdown player
+    [self stopHudTimer];
+    [self setScreenOn:NO];
+    ijkmp_stop(_mediaPlayer);
+    ijkmp_shutdown(_mediaPlayer);
+    __unused id weakHolder = (__bridge_transfer IJKWeakHolder*)ijkmp_set_inject_opaque(_mediaPlayer, NULL);
+    __unused id weakijkHolder = (__bridge_transfer IJKWeakHolder*)ijkmp_set_ijkio_inject_opaque(_mediaPlayer, NULL);
+    ijkmp_dec_ref_p(&_mediaPlayer);
+    
+    // init player
+    _mediaPlayer = ijkmp_ios_create(media_player_msg_loop);
+    ijkmp_set_weak_thiz(_mediaPlayer, (__bridge_retained void *) self);
+    ijkmp_set_inject_opaque(_mediaPlayer, (__bridge_retained void *) weakHolder);
+    ijkmp_set_ijkio_inject_opaque(_mediaPlayer, (__bridge_retained void *)weakHolder);
+    ijkmp_set_option_int(_mediaPlayer, IJKMP_OPT_CATEGORY_PLAYER, "start-on-prepared", 1);
+    ijkmp_ios_set_glview(_mediaPlayer, _glView);
+    ijkmp_set_option(_mediaPlayer, IJKMP_OPT_CATEGORY_PLAYER, "overlay-format", "fcc-_es2");
+    [self.options applyTo:_mediaPlayer];
+    
+    [self performSelectorOnMainThread:@selector(prepareToPlay) withObject:nil waitUntilDone:YES];
 }
 
 @end
