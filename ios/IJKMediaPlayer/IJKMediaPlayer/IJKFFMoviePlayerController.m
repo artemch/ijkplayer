@@ -1661,6 +1661,7 @@ static int ijkff_inject_callback(void *opaque, int message, void *data, size_t d
     [self setScreenOn:NO];
     ijkmp_stop(_mediaPlayer);
     ijkmp_shutdown(_mediaPlayer);
+    __unused id weakPlayer = (__bridge_transfer IJKFFMoviePlayerController*)ijkmp_set_weak_thiz(_mediaPlayer, NULL);
     __unused id weakHolder = (__bridge_transfer IJKWeakHolder*)ijkmp_set_inject_opaque(_mediaPlayer, NULL);
     __unused id weakijkHolder = (__bridge_transfer IJKWeakHolder*)ijkmp_set_ijkio_inject_opaque(_mediaPlayer, NULL);
     ijkmp_dec_ref_p(&_mediaPlayer);
